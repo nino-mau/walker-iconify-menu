@@ -6,99 +6,192 @@ Action = "wl-copy %VALUE%"
 HideFromProviderlist = false
 Description = "Search iconify icon and copy name to clipboard"
 SearchName = true
+KeepOpen = true
 
-local ICON_LIBRARY = "hugeicons"
+Actions = {
+	-- To copy the iconify icon name
+	copy_name = "wl-copy %VALUE%",
+	-- To copy the raw svg code
+	copy_svg = "lua:CopyIconSvg",
+	-- To toggle the "search all" mode
+	toggle_search_all = "lua:ToggleSearchAll",
+}
+
 local CACHE_DIR = os.getenv("HOME") .. "/.cache/elephant/iconify"
+
+local API_BASE = "https://api.iconify.design"
+
+local ICONIFY_API_SEARCH_LIMIT = 64
+
+-- By default only icons from these collections will be shown to improve performance
+local DEFAULT_COLLECTIONS = { "lucide", "hugeicons" }
+
+local utils = require("modules.utils")
 
 -- Ensure cache directory exists
 os.execute("mkdir -p '" .. CACHE_DIR .. "'")
 
--- Save SVG to cache with proper scaling and return file path
-function CacheSvg(icon_name, svg_content)
-	if not svg_content or svg_content == "" then
-		return nil
-	end
-
-	-- Scale SVG to higher resolution by replacing width/height
-	-- Replace width="1em" height="1em" with actual pixel values
-	local scaled_svg = svg_content:gsub('width="1em"', 'width="256"')
-	scaled_svg = scaled_svg:gsub('height="1em"', 'height="256"')
-
-	-- Alternative: ensure minimum size if no em units
-	if not scaled_svg:find("width=") then
-		scaled_svg = scaled_svg:gsub("<svg ", '<svg width="256" height="256" ')
-	end
-
-	local cache_path = CACHE_DIR .. "/" .. ICON_LIBRARY .. "_" .. icon_name .. ".svg"
-	local file = io.open(cache_path, "w")
-
-	if file then
-		file:write(scaled_svg)
-		file:close()
-		return cache_path
-	end
-
-	return nil
+--
+-- Copy svg data of an icon to clipboard
+--
+function CopyIconSvg(value, args, query)
+	local url = "https://api.iconify.design/" .. value:gsub(":", "/") .. ".svg"
+	os.execute("curl -s " .. url .. " | wl-copy")
 end
 
-function print_r(arr, indentLevel)
-	local str = ""
-	local indentStr = "#"
-
-	if indentLevel == nil then
-		print(print_r(arr, 0))
-		return
+--
+-- Search icons from all collections using Iconify API
+--
+local function searchIconsAll(query)
+	if not query or query == "" then
+		return {}
 	end
 
-	for i = 0, indentLevel do
-		indentStr = indentStr .. "\t"
-	end
+	if query:find("/") then
+		local coll, name = query:match("([^/]+)/(.+)")
 
-	for index, value in pairs(arr) do
-		if type(value) == "table" then
-			str = str .. indentStr .. index .. ": \n" .. print_r(value, (indentLevel + 1))
-		else
-			str = str .. indentStr .. index .. ": " .. value .. "\n"
+		if name == nil then
+			return {}
+		end
+
+		-- URL encode the query
+		local encoded_query = name:gsub(" ", "%%20")
+		local url = API_BASE .. "/search?query=" .. encoded_query .. "&prefix=" .. coll .. "&limit=64"
+
+		local handle = io.popen("curl -s '" .. url .. "'")
+		if handle then
+			local json_string = handle:read("*a")
+			handle:close()
+			local data = jsonDecode(json_string)
+			utils.tprint(data)
+			if data and data.icons then
+				return data.icons
+			end
 		end
 	end
-	return str
-end
 
-function GetEntries()
-	tt = state()
-	print_r(tt)
-	print(tt[0])
-	local entries = {}
+	-- URL encode the query
+	local encoded_query = query:gsub(" ", "%%20")
+	local url = API_BASE .. "/search?query=" .. encoded_query .. "&limit=" .. ICONIFY_API_SEARCH_LIMIT
 
-	local file = "cat ~/.local/share/iconify/" .. ICON_LIBRARY .. ".json"
-	local handle = io.popen("cat " .. file .. "")
-
+	local handle = io.popen("curl -s '" .. url .. "'")
 	if handle then
 		local json_string = handle:read("*a")
 		handle:close()
 		local data = jsonDecode(json_string)
+		if data and data.icons then
+			return data.icons
+		end
+	end
+	return {}
+end
 
-		for k, v in pairs(data.icons) do
-			-- Fetch SVG from API and cache it
-			local cache_path = CACHE_DIR .. "/" .. ICON_LIBRARY .. "_" .. v.name .. ".svg"
+--
+-- Search icons from specified collections using Iconify API
+--
+local function searchIconsColls(query, colls)
+	if not query or query == "" then
+		return {}
+	end
 
-			-- Check if already cached, otherwise fetch from API
-			local svg_exists = io.open(cache_path, "r")
-			if not svg_exists then
-				local api_url = "https://api.iconify.design/" .. ICON_LIBRARY .. "/" .. v.name .. ".svg"
-				os.execute("curl -s '" .. api_url .. "' -o '" .. cache_path .. "' 2>/dev/null")
-			else
-				svg_exists:close()
-			end
+	local encoded_query = query:gsub(" ", "%%20"):gsub(".*/", "")
+	local colls_str = table.concat(colls, ",")
+	local url = API_BASE .. "/search?query=" .. encoded_query .. "&prefixes=" .. colls_str .. "&limit=64"
+
+	print(url)
+	local handle = io.popen("curl -s '" .. url .. "'")
+	if handle then
+		local json_string = handle:read("*a")
+		handle:close()
+		local data = jsonDecode(json_string)
+		tprint(data)
+		if data and data.icons then
+			return data.icons
+		end
+	end
+	return {}
+end
+
+-- Fetch and cache SVG for an icon
+local function fetchSvg(prefix, name)
+	local cache_path = CACHE_DIR .. "/" .. prefix .. "_" .. name .. ".svg"
+
+	-- Check if already cached
+	local svg_exists = io.open(cache_path, "r")
+	if svg_exists then
+		svg_exists:close()
+		return cache_path
+	end
+
+	-- Fetch from API with fixed height for consistent preview sizing
+	local url = API_BASE .. "/" .. prefix .. "/" .. name .. ".svg?height=128"
+	os.execute("curl -s '" .. url .. "' -o '" .. cache_path .. "' 2>/dev/null")
+
+	return cache_path
+end
+
+--
+-- Toggle the "search all" mode
+--
+function ToggleSearchAll()
+	print("Toggle search all")
+	local current_state = state() or {}
+	if current_state[1] == "search_all_on" then
+		setState({})
+	else
+		setState({ "search_all_on" })
+	end
+end
+
+--
+-- Run on every user input, argument query contains the input
+--
+function GetEntries(query)
+	local entries = {}
+	local icons = {}
+
+	local current_state = state() or {}
+	print(current_state)
+	tprint(current_state)
+
+	if not query or query == "" then
+		table.insert(entries, {
+			Text = "Type to search icons...",
+			Subtext = "Search across all Iconify icon sets",
+			Value = "",
+		})
+		return entries
+	end
+
+	-- Search icons via API
+	if current_state[1] == "search_all_on" then
+		icons = searchIconsAll(query)
+	else
+		icons = searchIconsColls(query, DEFAULT_COLLECTIONS)
+	end
+
+	if #icons == 0 then
+		table.insert(entries, {
+			Text = "No icons found",
+			Subtext = "Try a different search term",
+			Value = "",
+		})
+		return entries
+	end
+
+	for _, icon_full_name in ipairs(icons) do
+		local prefix, name = icon_full_name:match("([^:]+):(.+)")
+
+		if prefix and name then
+			-- Fetch and cache SVG
+			local cache_path = fetchSvg(prefix, name)
 
 			table.insert(entries, {
-				Text = v.name,
-				Subtext = "Copy icon name",
-				Value = v.name,
+				Text = icon_full_name:gsub(":", "/"),
+				Subtext = prefix,
+				Value = icon_full_name,
 				Icon = cache_path,
 				IconPreview = cache_path,
-				Preview = cache_path,
-				PreviewType = "file",
 			})
 		end
 	end
