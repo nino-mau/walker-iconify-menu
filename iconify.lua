@@ -26,7 +26,29 @@ local ICONIFY_API_SEARCH_LIMIT = 64
 -- By default only icons from these collections will be shown to improve performance
 local DEFAULT_COLLECTIONS = { "lucide", "hugeicons" }
 
-local utils = require("modules.utils")
+-- Debug utility to print table
+function tprint(tbl, indent)
+	if not indent then
+		indent = 0
+	end
+
+	-- Check if the input is actually a table
+	if type(tbl) ~= "table" then
+		print(string.rep("  ", indent) .. tostring(tbl))
+		return
+	end
+
+	for k, v in pairs(tbl) do
+		local formatting = string.rep("  ", indent) .. tostring(k) .. ": "
+
+		if type(v) == "table" then
+			print(formatting)
+			tprint(v, indent + 1)
+		else
+			print(formatting .. tostring(v))
+		end
+	end
+end
 
 -- Ensure cache directory exists
 os.execute("mkdir -p '" .. CACHE_DIR .. "'")
@@ -63,7 +85,7 @@ local function searchIconsAll(query)
 			local json_string = handle:read("*a")
 			handle:close()
 			local data = jsonDecode(json_string)
-			utils.tprint(data)
+			tprint(data)
 			if data and data.icons then
 				return data.icons
 			end
