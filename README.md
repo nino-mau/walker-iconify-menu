@@ -1,4 +1,4 @@
-# Elephant Iconify
+# Elephant Iconify (draft)
 
 Custom [Elephant](https://github.com/abenz1267/elephant) menu to browse [Iconify](https://iconify.design/) icons in [Walker Launcher](https://github.com/abenz1267/walker).
 
@@ -42,6 +42,7 @@ Then restart walker & elephant.
 Type to search icons. By default, only Lucide and Hugeicons collections are searched for better performance.
 
 **Special search syntax:**
+
 - Use `/` to search specific collections: `collection/query` (e.g., `phosphor/arrow`)
 - Toggle "Search All" with `Ctrl+A` to search across all Iconify collections
 
@@ -53,11 +54,11 @@ SVG icons are downloaded and cached in `~/.cache/elephant/iconify/` on first use
 
 ## Actions
 
-| Key      | Action                                          |
-| -------- | ----------------------------------------------- |
+| Key      | Action                                              |
+| -------- | --------------------------------------------------- |
 | `Enter`  | Copy icon name to clipboard (e.g., `lucide:search`) |
-| `Ctrl+S` | Copy icon as SVG code                           |
-| `Ctrl+A` | Toggle "Search All" mode                        |
+| `Ctrl+S` | Copy icon as SVG code                               |
+| `Ctrl+A` | Toggle "Search All" mode                            |
 
 ## Configuration
 
