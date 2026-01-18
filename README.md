@@ -1,4 +1,4 @@
-# Elephant Iconify (draft)
+# Elephant Iconify (incomplete)
 
 Custom [Elephant](https://github.com/abenz1267/elephant) menu to browse [Iconify](https://iconify.design/) icons in [Walker Launcher](https://github.com/abenz1267/walker).
 
