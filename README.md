@@ -1,4 +1,4 @@
-# Elephant Iconify (incomplete)
+# Elephant Iconify
 
 Custom [Elephant](https://github.com/abenz1267/elephant) menu to browse [Iconify](https://iconify.design/) icons in [Walker Launcher](https://github.com/abenz1267/walker).
 
@@ -12,12 +12,14 @@ Browse popular icon libraries like [Lucide](https://lucide.dev/), [Hugeicons](ht
 - [Elephant](https://github.com/abenz1267/elephant) with `menus` provider
 - [curl](https://curl.se/) for fetching icons
 
+> [!TIP]
+> On Arch run `paru -S elephant-menus-bin` to install the `menus` provider.
+
 ## Installation
 
 ```bash
 git clone https://github.com/nino-mau/elephant-iconify
 cd elephant-iconify
-chmod +x install.sh
 ./install.sh
 ```
 
@@ -25,7 +27,7 @@ The install script will:
 
 1. Check for required dependencies (curl)
 2. Copy the menu to `~/.config/elephant/menus/`
-3. Append action keybindings to your walker config
+3. Append action keybindings to your walker config (`~/.config/walker/config.toml`)
 
 ## Setup
 
@@ -49,18 +51,26 @@ Type to search icons. By default, only Lucide and Hugeicons collections are sear
 - Toggle "Search All" with `Ctrl+A` to search across all Iconify collections
 
 **Caching:**
+
 SVG icons are downloaded and cached in `~/.cache/elephant/iconify/` on first use for faster subsequent loads.
 
-> [!NOTE]
+> [!WARNING]
 > Searching all collections may be slower since icons are fetched on demand.
 
 ## Actions
 
-| Key      | Action                                              |
-| -------- | --------------------------------------------------- |
-| `Enter`  | Copy icon name to clipboard (e.g., `lucide:search`) |
-| `Ctrl+S` | Copy icon as SVG code                               |
-| `Ctrl+A` | Toggle "Search All" mode                            |
+| Key      | Action                                                                 | Type        |
+| -------- | ---------------------------------------------------------------------- | ----------- |
+| `Enter`  | Copy icon name to clipboard (e.g., `lucide:search`)                    | Action      |
+| `Ctrl+S` | Copy icon as SVG code                                                  | Action      |
+| `Ctrl+A` | Show icons from all collections                                        | Mode Toggle |
+| `Ctrl+L` | Show icons only from [Lucide](https://lucide.dev/) collection          | Mode Toggle |
+| `Ctrl+H` | Show icons only from [Hugeicons](https://hugeicons.com/) collection    | Mode Toggle |
+| `Ctrl+P` | Show icons only from [Phosphor](https://phosphoricons.com/) collection | Mode Toggle |
+| `Ctrl+T` | Show icons only from [Tabler](https://tabler.io/icons) collection      | Mode Toggle |
+
+> [!TIP]
+> Only one "mode" can be active at the same time, toggling one disable the other
 
 ## Configuration
 
