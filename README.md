@@ -17,13 +17,15 @@ Browse popular icon libraries like [Lucide](https://lucide.dev/), [Hugeicons](ht
 ```bash
 git clone https://github.com/nino-mau/elephant-iconify
 cd elephant-iconify
-sudo ./install.sh
+chmod +x install.sh
+./install.sh
 ```
 
 The install script will:
 
-1. Copy the menu to `~/.config/elephant/menus/`
-2. Append action keybindings to your walker config
+1. Check for required dependencies (curl)
+2. Copy the menu to `~/.config/elephant/menus/`
+3. Append action keybindings to your walker config
 
 ## Setup
 
