@@ -1,0 +1,9 @@
+{
+  "diagnostics": {
+    "globals": [
+      "state",
+      "setState",
+      "jsonDecode"
+    ]
+  }
+}
