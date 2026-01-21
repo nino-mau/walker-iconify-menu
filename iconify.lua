@@ -251,7 +251,7 @@ function GetEntries(query)
 	elseif current_state[1] == "search_hugeicons_on" then
 		icons = searchIconsColls(query, { "hugeicons" })
 	elseif current_state[1] == "search_phosphor_on" then
-		icons = searchIconsColls(query, { "phosphor" })
+		icons = searchIconsColls(query, { "ph" })
 	elseif current_state[1] == "search_tabler_on" then
 		icons = searchIconsColls(query, { "tabler" })
 	else
