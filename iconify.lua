@@ -8,6 +8,7 @@ Description = "Search iconify icon and copy name to clipboard"
 SearchName = true
 KeepOpen = true
 
+-- Actions available in the iconify menu
 Actions = {
 	-- To copy the iconify icon name
 	copy_name = "wl-copy %VALUE%",
@@ -15,18 +16,44 @@ Actions = {
 	copy_svg = "lua:CopyIconSvg",
 	-- To toggle the "search all" mode
 	toggle_search_all = "lua:ToggleSearchAll",
+	-- To toggle the "search lucide" mode
+	toggle_search_lucide = "lua:ToggleSearchLucide",
+	-- To toggle the "search hugeicons" mode
+	toggle_search_hugeicons = "lua:ToggleSearchHugeicons",
+	-- To toggle the "search phosphor" mode
+	toggle_search_phosphor = "lua:ToggleSearchPhosphor",
+	-- To toggle the "search tabler" mode
+	toggle_search_tabler = "lua:ToggleSearchTabler",
 }
 
+--------------------------------------------------------------------------------
+-- CONSTANTS
+--------------------------------------------------------------------------------
+
+-- Dir where the icon svg will be cached
 local CACHE_DIR = os.getenv("HOME") .. "/.cache/elephant/iconify"
 
+-- Link to the iconify API
 local API_BASE = "https://api.iconify.design"
 
+-- Amount of icons that will be returned by each search query to the iconify API
 local ICONIFY_API_SEARCH_LIMIT = 64
 
 -- By default only icons from these collections will be shown to improve performance
 local DEFAULT_COLLECTIONS = { "lucide", "hugeicons" }
 
--- Debug utility to print table
+--------------------------------------------------------------------------------
+-- INIT
+--------------------------------------------------------------------------------
+
+-- Ensure cache directory exists
+os.execute("mkdir -p '" .. CACHE_DIR .. "'")
+
+--------------------------------------------------------------------------------
+-- UTILITY FUNCTIONS
+--------------------------------------------------------------------------------
+
+-- Print a table, used for debug
 function tprint(tbl, indent)
 	if not indent then
 		indent = 0
@@ -50,19 +77,66 @@ function tprint(tbl, indent)
 	end
 end
 
--- Ensure cache directory exists
-os.execute("mkdir -p '" .. CACHE_DIR .. "'")
+--------------------------------------------------------------------------------
+-- ACTIONS FUNCTIONS
+--------------------------------------------------------------------------------
 
---
--- Copy svg data of an icon to clipboard
---
-function CopyIconSvg(value, args, query)
+function CopyIconSvg(value)
 	local url = "https://api.iconify.design/" .. value:gsub(":", "/") .. ".svg"
 	os.execute("curl -s " .. url .. " | wl-copy")
 end
 
+function ToggleSearchAll()
+	local current_state = state() or {}
+	if current_state[1] == "search_all_on" then
+		setState({})
+	else
+		setState({ "search_all_on" })
+	end
+end
+
+function ToggleSearchLucide()
+	local current_state = state() or {}
+	if current_state[1] == "search_lucide_on" then
+		setState({})
+	else
+		setState({ "search_lucide_on" })
+	end
+end
+
+function ToggleSearchHugeicons()
+	local current_state = state() or {}
+	if current_state[1] == "search_hugeicons_on" then
+		setState({})
+	else
+		setState({ "search_hugeicons_on" })
+	end
+end
+
+function ToggleSearchPhosphor()
+	local current_state = state() or {}
+	if current_state[1] == "search_phosphor_on" then
+		setState({})
+	else
+		setState({ "search_phosphor_on" })
+	end
+end
+
+function ToggleSearchTabler()
+	local current_state = state() or {}
+	if current_state[1] == "search_tabler_on" then
+		setState({})
+	else
+		setState({ "search_tabler_on" })
+	end
+end
+
+--------------------------------------------------------------------------------
+-- CORE FUNCTIONS
+--------------------------------------------------------------------------------
+
 --
--- Search icons from all collections using Iconify API
+-- Query iconify API for icons from all collections
 --
 local function searchIconsAll(query)
 	if not query or query == "" then
@@ -85,7 +159,6 @@ local function searchIconsAll(query)
 			local json_string = handle:read("*a")
 			handle:close()
 			local data = jsonDecode(json_string)
-			tprint(data)
 			if data and data.icons then
 				return data.icons
 			end
@@ -109,7 +182,7 @@ local function searchIconsAll(query)
 end
 
 --
--- Search icons from specified collections using Iconify API
+-- Query iconify API for icons from specified collection
 --
 local function searchIconsColls(query, colls)
 	if not query or query == "" then
@@ -120,13 +193,11 @@ local function searchIconsColls(query, colls)
 	local colls_str = table.concat(colls, ",")
 	local url = API_BASE .. "/search?query=" .. encoded_query .. "&prefixes=" .. colls_str .. "&limit=64"
 
-	print(url)
 	local handle = io.popen("curl -s '" .. url .. "'")
 	if handle then
 		local json_string = handle:read("*a")
 		handle:close()
 		local data = jsonDecode(json_string)
-		tprint(data)
 		if data and data.icons then
 			return data.icons
 		end
@@ -134,7 +205,9 @@ local function searchIconsColls(query, colls)
 	return {}
 end
 
--- Fetch and cache SVG for an icon
+--
+-- Fetch and cache icon svg
+--
 local function fetchSvg(prefix, name)
 	local cache_path = CACHE_DIR .. "/" .. prefix .. "_" .. name .. ".svg"
 
@@ -153,28 +226,13 @@ local function fetchSvg(prefix, name)
 end
 
 --
--- Toggle the "search all" mode
---
-function ToggleSearchAll()
-	print("Toggle search all")
-	local current_state = state() or {}
-	if current_state[1] == "search_all_on" then
-		setState({})
-	else
-		setState({ "search_all_on" })
-	end
-end
-
---
--- Run on every user input, argument query contains the input
+-- Build the menu entries, runs everytime the user input something
 --
 function GetEntries(query)
 	local entries = {}
 	local icons = {}
 
 	local current_state = state() or {}
-	print(current_state)
-	tprint(current_state)
 
 	if not query or query == "" then
 		table.insert(entries, {
@@ -188,6 +246,14 @@ function GetEntries(query)
 	-- Search icons via API
 	if current_state[1] == "search_all_on" then
 		icons = searchIconsAll(query)
+	elseif current_state[1] == "search_lucide_on" then
+		icons = searchIconsColls(query, { "lucide" })
+	elseif current_state[1] == "search_hugeicons_on" then
+		icons = searchIconsColls(query, { "hugeicons" })
+	elseif current_state[1] == "search_phosphor_on" then
+		icons = searchIconsColls(query, { "phosphor" })
+	elseif current_state[1] == "search_tabler_on" then
+		icons = searchIconsColls(query, { "tabler" })
 	else
 		icons = searchIconsColls(query, DEFAULT_COLLECTIONS)
 	end
