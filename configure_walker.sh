@@ -20,7 +20,7 @@ fi
 
 # Check if iconify is already configured
 if grep -q '"menus:iconify" = \[' "$WALKER_CONFIG"; then
-  echo "Iconify is already configured in your Walker config"
+  echo "Iconify menu is already configured in your Walker config"
   exit 0
 fi
 
@@ -54,4 +54,4 @@ else
   echo "$ICONIFY_CONFIG" >>"$WALKER_CONFIG"
 fi
 
-echo "Walker configured for iconify"
+echo "Walker configured for iconify menu"
